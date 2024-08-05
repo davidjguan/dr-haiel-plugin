@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Dr Haiel
- * Verseion: First version
+ * Version: First version
  * Description: use shortcode "[haiel]" in wordpress page to activate
  */
 
