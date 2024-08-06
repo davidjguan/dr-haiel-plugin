@@ -10,7 +10,7 @@ function helloworld_shortcode() {
 	return '<div id="haiel" ></div>';
 }
 
-// add_shortcode('hello-world-react', 'helloworld_shortcode');
+// need to change from shortcode to automatic
 add_shortcode('haiel', 'helloworld_shortcode');
 
 function helloworld_load_assets() {
