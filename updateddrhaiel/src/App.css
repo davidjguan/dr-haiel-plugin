@@ -1,0 +1,19 @@
+.App {
+  text-align: center;
+}
+
+/* Hide Bot Header */
+/* #WACContainer.WACContainer .WACHeader__Name {
+  display: none;
+} */
+
+/* Hide Bot Banner */
+#WACContainer.WACContainer .WACBrandingBanner .WACBrandingBanner__text {
+  display: none;
+}
+
+/* Width */
+#WACContainer.WACContainer #WACWidget {
+  width: 61.8%;
+  /* max-height: max-content; */
+}
