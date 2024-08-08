@@ -5,18 +5,23 @@
  * Description: use shortcode "[haiel]" in wordpress page to activate
  */
 
-function helloworld_shortcode() {
+ function helloworld_shortcode() {
 
-	return '<div id="haiel" ></div>';
+    ?> '<div id="haiel" ></div>'
+    <?php
 }
+// function helloworld_shortcode() {
+
+// 	return '<div id="haiel" ></div>';
+// }
 
 // need to change from shortcode to automatic
 add_shortcode('haiel', 'helloworld_shortcode');
 
 function helloworld_load_assets() {
 	
-	$react_app_js  = plugin_dir_url( __FILE__ ) . 'helloworldreactapp/build/static/js/all_in_one_file.js';
-    $react_app_css = plugin_dir_url( __FILE__ ) . 'helloworldreactapp/build/static/css/somecss.css';
+	$react_app_js  = plugin_dir_url( __FILE__ ) . 'updateddrhaiel/build/static/js/all_in_one_file.js';
+    $react_app_css = plugin_dir_url( __FILE__ ) . 'updateddrhaiel/build/static/css/somecss.css';
     // time stops stylesheet/js caching while in development, might want to remove later  
     $version = time();	
     wp_enqueue_script( 'haiel', $react_app_js, array(), $version, true );         
@@ -24,3 +29,4 @@ function helloworld_load_assets() {
 }
 
 add_action( 'wp_enqueue_scripts', 'helloworld_load_assets' );
+add_action('wp_footer','helloworld_shortcode');
