@@ -5,6 +5,7 @@
  * Adds Dr. Haiel Chatbot to each page of a website
  * Author: David Guan
  * License: GPL2
+ * Description: Adds a chatbot to a hospital website to help patients navigate
  * 
  */
 
