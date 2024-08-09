@@ -1,8 +1,11 @@
 <?php
 /**
- * Plugin Name: Dr Haiel
- * Version: First version
- * Description: use shortcode "[haiel]" in wordpress page to activate
+ * Plugin Name: Dr. Haiel Chatbot
+ * Version: 1.0
+ * Adds Dr. Haiel Chatbot to each page of a website
+ * Author: David Guan
+ * License: GPL2
+ * 
  */
 
  function helloworld_shortcode() {
