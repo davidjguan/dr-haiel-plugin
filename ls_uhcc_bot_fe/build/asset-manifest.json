@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/static/css/somecss.css",
+    "main.js": "/static/js/all_in_one_file.js",
+    "index.html": "/index.html",
+    "somecss.css.map": "/static/css/somecss.css.map",
+    "all_in_one_file.js.map": "/static/js/all_in_one_file.js.map"
+  },
+  "entrypoints": [
+    "static/css/somecss.css",
+    "static/js/all_in_one_file.js"
+  ]
+}
