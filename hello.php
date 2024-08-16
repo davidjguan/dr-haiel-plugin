@@ -18,7 +18,7 @@
 // 	return '<div id="haiel" ></div>';
 // }
 
-// need to change from shortcode to automatic
+// whenever a shortcode with [haiel] is found, the code from helloworld_shortcode is inserted
 add_shortcode('haiel', 'helloworld_shortcode');
 
 function helloworld_load_assets() {
@@ -29,58 +29,348 @@ function helloworld_load_assets() {
     $version = time();	
     wp_enqueue_script( 'haiel', $react_app_js, array(), $version, true );         
     wp_enqueue_style( 'haiel', $react_app_css, array(), $version );
+
+//code below is for sending settings to App.js to change the bot
+    $options = get_option("wporg_options");
+    $selected_bot = $options['choose-bot-id'] ?? 'purple'; //returns purple if first is null
+
+    //wp_localize_script makes haielSettings object globally availble through the window object
+    wp_localize_script('haiel','haielSettings',array(//first parameter is script handle data is attached to, second is name for javascript object, third is data itself
+        'selectedBot' => $selected_bot
+    ));
 }
 
 add_action( 'wp_enqueue_scripts', 'helloworld_load_assets' );
 add_action('wp_footer','helloworld_shortcode');
 
 
-//trying to add settings page
+//Code below for settings page generated from https://wpturbo.dev/generators/settings-page/
 
-function dbi_add_settings_page() {
-    add_options_page( 'Example plugin page', 'Example Plugin Menu', 'manage_options', 'dbi-example-plugin', 'dbi_render_plugin_settings_page' );
-}
-function dbi_render_plugin_settings_page() {
-    ?>
-    <h2>Example Plugin Settings</h2>
-    <form action="options.php" method="post">
-        <?php 
-        settings_fields( 'dbi_example_plugin_options' );
-        do_settings_sections( 'dbi_example_plugin' ); ?>
-        <input name="submit" class="button button-primary" type="submit" value="<?php esc_attr_e( 'Save' ); ?>" />
-    </form>
-    <?php
-}
-function dbi_register_settings() {
-    register_setting( 'dbi_example_plugin_options', 'dbi_example_plugin_options', 'dbi_example_plugin_options_validate' );
-    add_settings_section( 'api_settings', 'API Settings', 'dbi_plugin_section_text', 'dbi_example_plugin' );
+/**
+ * Class settings_class_name
+ *
+ * Configure the plugin settings page.
+ */
+class settings_class_name {
 
-    add_settings_field( 'dbi_plugin_setting_api_key', 'API Key', 'dbi_plugin_setting_api_key', 'dbi_example_plugin', 'api_settings' );
-    add_settings_field( 'dbi_plugin_setting_results_limit', 'Results Limit', 'dbi_plugin_setting_results_limit', 'dbi_example_plugin', 'api_settings' );
-    add_settings_field( 'dbi_plugin_setting_start_date', 'Start Date', 'dbi_plugin_setting_start_date', 'dbi_example_plugin', 'api_settings' );
-}
-function dbi_plugin_section_text() {
-    echo '<p>Here you can set all the options for using the API</p>';
+	/**
+	 * Capability required by the user to access the My Plugin menu entry.
+	 *
+	 * @var string $capability
+	 */
+	private $capability = 'manage_options';
+
+	/**
+	 * Array of fields that should be displayed in the settings page.
+	 *
+	 * @var array $fields
+	 */
+	private $fields = [
+		[
+			'id' => 'choose-bot-id',
+			'label' => 'Choose a bot',
+			'description' => 'choose purple or blue',
+			'type' => 'select',
+			'options' => [
+				'purple' => 'purple',
+				'blue' => 'blue',
+			],
+		],
+		[
+			'id' => 'color-field-id',
+			'label' => 'color',
+			'description' => 'select color of chatbot (currently unsupported)',
+			'type' => 'color',
+		],
+	];
+
+	/**
+	 * The Plugin Settings constructor.
+	 */
+	function __construct() {
+		add_action( 'admin_init', [$this, 'settings_init'] );
+		add_action( 'admin_menu', [$this, 'options_page'] );
+	}
+
+	/**
+	 * Register the settings and all fields.
+	 */
+	function settings_init() : void {
+
+		// Register a new setting this page.
+		register_setting( 'dr-haiel-plugin-settings', 'wporg_options' );
+
+
+		// Register a new section.
+		add_settings_section(
+			'dr-haiel-plugin-settings-section',
+			__( 'section description', 'dr-haiel-plugin-settings' ),
+			[$this, 'render_section'],
+			'dr-haiel-plugin-settings'
+		);
+
+
+		/* Register All The Fields. */
+		foreach( $this->fields as $field ) {
+			// Register a new field in the main section.
+			add_settings_field(
+				$field['id'], /* ID for the field. Only used internally. To set the HTML ID attribute, use $args['label_for']. */
+				__( $field['label'], 'dr-haiel-plugin-settings' ), /* Label for the field. */
+				[$this, 'render_field'], /* The name of the callback function. */
+				'dr-haiel-plugin-settings', /* The menu page on which to display this field. */
+				'dr-haiel-plugin-settings-section', /* The section of the settings page in which to show the box. */
+				[
+					'label_for' => $field['id'], /* The ID of the field. */
+					'class' => 'wporg_row', /* The class of the field. */
+					'field' => $field, /* Custom data for the field. */
+				]
+			);
+		}
+	}
+
+	/**
+	 * Add a subpage to the WordPress Settings menu.
+	 */
+	function options_page() : void {
+		add_menu_page(
+			'Settings Page for Dr. Haiel Plugin', /* Page Title */
+			'Dr HAIEL Settings', /* Menu Title */
+			$this->capability, /* Capability */
+			'dr-haiel-plugin-settings', /* Menu Slug */
+			[$this, 'render_options_page'], /* Callback */
+			'dashicons-rss', /* Icon */
+			'2', /* Position */
+		);
+	}
+
+	/**
+	 * Render the settings page.
+	 */
+	function render_options_page() : void {
+
+		// check user capabilities
+		if ( ! current_user_can( $this->capability ) ) {
+			return;
+		}
+
+		// add error/update messages
+
+		// check if the user have submitted the settings
+		// WordPress will add the "settings-updated" $_GET parameter to the url
+		if ( isset( $_GET['settings-updated'] ) ) {
+			// add settings saved message with the class of "updated"
+			add_settings_error( 'wporg_messages', 'wporg_message', __( 'Settings Saved', 'dr-haiel-plugin-settings' ), 'updated' );
+		}
+
+		// show error/update messages
+		settings_errors( 'wporg_messages' );
+		?>
+		<div class="wrap">
+			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+			<h2 class="description">description</h2>
+			<form action="options.php" method="post">
+				<?php
+				/* output security fields for the registered setting "wporg" */
+				settings_fields( 'dr-haiel-plugin-settings' );
+				/* output setting sections and their fields */
+				/* (sections are registered for "wporg", each field is registered to a specific section) */
+				do_settings_sections( 'dr-haiel-plugin-settings' );
+				/* output save settings button */
+				submit_button( 'Save Settings' );
+				?>
+			</form>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render a settings field.
+	 *
+	 * @param array $args Args to configure the field.
+	 */
+	function render_field( array $args ) : void {
+
+		$field = $args['field'];
+
+		// Get the value of the setting we've registered with register_setting()
+		$options = get_option( 'wporg_options' );
+
+		switch ( $field['type'] ) {
+
+			case "text": {
+				?>
+				<input
+					type="text"
+					id="<?php echo esc_attr( $field['id'] ); ?>"
+					name="wporg_options[<?php echo esc_attr( $field['id'] ); ?>]"
+					value="<?php echo isset( $options[ $field['id'] ] ) ? esc_attr( $options[ $field['id'] ] ) : ''; ?>"
+				>
+				<p class="description">
+					<?php esc_html_e( $field['description'], 'dr-haiel-plugin-settings' ); ?>
+				</p>
+				<?php
+				break;
+			}
+
+			case "checkbox": {
+				?>
+				<input
+					type="checkbox"
+					id="<?php echo esc_attr( $field['id'] ); ?>"
+					name="wporg_options[<?php echo esc_attr( $field['id'] ); ?>]"
+					value="1"
+					<?php echo isset( $options[ $field['id'] ] ) ? ( checked( $options[ $field['id'] ], 1, false ) ) : ( '' ); ?>
+				>
+				<p class="description">
+					<?php esc_html_e( $field['description'], 'dr-haiel-plugin-settings' ); ?>
+				</p>
+				<?php
+				break;
+			}
+
+			case "textarea": {
+				?>
+				<textarea
+					id="<?php echo esc_attr( $field['id'] ); ?>"
+					name="wporg_options[<?php echo esc_attr( $field['id'] ); ?>]"
+				><?php echo isset( $options[ $field['id'] ] ) ? esc_attr( $options[ $field['id'] ] ) : ''; ?></textarea>
+				<p class="description">
+					<?php esc_html_e( $field['description'], 'dr-haiel-plugin-settings' ); ?>
+				</p>
+				<?php
+				break;
+			}
+
+			case "select": {
+				?>
+				<select
+					id="<?php echo esc_attr( $field['id'] ); ?>"
+					name="wporg_options[<?php echo esc_attr( $field['id'] ); ?>]"
+				>
+					<?php foreach( $field['options'] as $key => $option ) { ?>
+						<option value="<?php echo $key; ?>" 
+							<?php echo isset( $options[ $field['id'] ] ) ? ( selected( $options[ $field['id'] ], $key, false ) ) : ( '' ); ?>
+						>
+							<?php echo $option; ?>
+						</option>
+					<?php } ?>
+				</select>
+				<p class="description">
+					<?php esc_html_e( $field['description'], 'dr-haiel-plugin-settings' ); ?>
+				</p>
+				<?php
+				break;
+			}
+
+			case "password": {
+				?>
+				<input
+					type="password"
+					id="<?php echo esc_attr( $field['id'] ); ?>"
+					name="wporg_options[<?php echo esc_attr( $field['id'] ); ?>]"
+					value="<?php echo isset( $options[ $field['id'] ] ) ? esc_attr( $options[ $field['id'] ] ) : ''; ?>"
+				>
+				<p class="description">
+					<?php esc_html_e( $field['description'], 'dr-haiel-plugin-settings' ); ?>
+				</p>
+				<?php
+				break;
+			}
+
+			case "wysiwyg": {
+				wp_editor(
+					isset( $options[ $field['id'] ] ) ? $options[ $field['id'] ] : '',
+					$field['id'],
+					array(
+						'textarea_name' => 'wporg_options[' . $field['id'] . ']',
+						'textarea_rows' => 5,
+					)
+				);
+				break;
+			}
+
+			case "email": {
+				?>
+				<input
+					type="email"
+					id="<?php echo esc_attr( $field['id'] ); ?>"
+					name="wporg_options[<?php echo esc_attr( $field['id'] ); ?>]"
+					value="<?php echo isset( $options[ $field['id'] ] ) ? esc_attr( $options[ $field['id'] ] ) : ''; ?>"
+				>
+				<p class="description">
+					<?php esc_html_e( $field['description'], 'dr-haiel-plugin-settings' ); ?>
+				</p>
+				<?php
+				break;
+			}
+
+			case "url": {
+				?>
+				<input
+					type="url"
+					id="<?php echo esc_attr( $field['id'] ); ?>"
+					name="wporg_options[<?php echo esc_attr( $field['id'] ); ?>]"
+					value="<?php echo isset( $options[ $field['id'] ] ) ? esc_attr( $options[ $field['id'] ] ) : ''; ?>"
+				>
+				<p class="description">
+					<?php esc_html_e( $field['description'], 'dr-haiel-plugin-settings' ); ?>
+				</p>
+				<?php
+				break;
+			}
+
+			case "color": {
+				?>
+				<input
+					type="color"
+					id="<?php echo esc_attr( $field['id'] ); ?>"
+					name="wporg_options[<?php echo esc_attr( $field['id'] ); ?>]"
+					value="<?php echo isset( $options[ $field['id'] ] ) ? esc_attr( $options[ $field['id'] ] ) : ''; ?>"
+				>
+				<p class="description">
+					<?php esc_html_e( $field['description'], 'dr-haiel-plugin-settings' ); ?>
+				</p>
+				<?php
+				break;
+			}
+
+			case "date": {
+				?>
+				<input
+					type="date"
+					id="<?php echo esc_attr( $field['id'] ); ?>"
+					name="wporg_options[<?php echo esc_attr( $field['id'] ); ?>]"
+					value="<?php echo isset( $options[ $field['id'] ] ) ? esc_attr( $options[ $field['id'] ] ) : ''; ?>"
+				>
+				<p class="description">
+					<?php esc_html_e( $field['description'], 'dr-haiel-plugin-settings' ); ?>
+				</p>
+				<?php
+				break;
+			}
+
+		}
+	}
+
+
+	/**
+	 * Render a section on a page, with an ID and a text label.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args {
+	 *     An array of parameters for the section.
+	 *
+	 *     @type string $id The ID of the section.
+	 * }
+	 */
+	function render_section( array $args ) : void {
+		?>
+		<p id="<?php echo esc_attr( $args['id'] ); ?>"><?php esc_html_e( 'section title', 'dr-haiel-plugin-settings' ); ?></p>
+		<?php
+	}
+
 }
 
-function dbi_plugin_setting_api_key() {
-    $options = get_option( 'dbi_example_plugin_options' );
-    echo "<input id='dbi_plugin_setting_api_key' name='dbi_example_plugin_options[api_key]' type='text' value='" . esc_attr( $options['api_key'] ) . "' />";
-}
+new settings_class_name();
 
-function dbi_plugin_setting_results_limit() {
-    $options = get_option( 'dbi_example_plugin_options' );
-    echo "<input id='dbi_plugin_setting_results_limit' name='dbi_example_plugin_options[results_limit]' type='text' value='" . esc_attr( $options['results_limit'] ) . "' />";
-}
-
-function dbi_plugin_setting_start_date() {
-    $options = get_option( 'dbi_example_plugin_options' );
-    echo "<input id='dbi_plugin_setting_start_date' name='dbi_example_plugin_options[start_date]' type='text' value='" . esc_attr( $options['start_date'] ) . "' />";
-}
-add_action( 'admin_init', 'dbi_register_settings' );
-add_action( 'admin_menu', 'dbi_add_settings_page' );
-echo "<script>window.alert('david');</script>";
-echo "<script>
-let number = 1;
-window.alert(number);
-</script>";
